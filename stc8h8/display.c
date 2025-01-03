@@ -11,6 +11,8 @@ unsigned char random_number = 0;
 const unsigned char com_data[10] = {0xFE, 0xFD, 0xFB,0xF7,0xEF,0xDF,0xBF,0x7F,0xBF,0x7F};
 static unsigned char com_num = 0;//记录当刷新到第几个COM
 static unsigned char com_status = 0;//记录当前刷新的COM状态(高或者第)
+long system_seconds = 0;    // 系统时间的秒部分
+long system_microseconds = 0; // 系统时间的微秒部分
 
 //显存数据
 unsigned char Screen_Buff[10][4] = { 0 };
@@ -31,7 +33,13 @@ static void Timer_0_Init(void)		//2毫秒@30.000MHz
 void Timer0_Isr() interrupt 1
 {
 	random_number ++;//定时器产生伪随机数
-	
+	system_microseconds += 1000;  // 1毫秒
+
+  if (system_microseconds >= 1000000) {
+		system_microseconds -= 1000000;
+		system_seconds++;  // 如果微秒达到1000000，秒数增加1
+	}
+		
 	if(com_status == 0) //选中的COM为低电平0V，未选中的COM为2.4V，Sige 高电平显示
 	{ 
 		P2M0 = 0xff; //P2 推挽

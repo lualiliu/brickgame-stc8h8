@@ -3,6 +3,10 @@
 #include "display.h"
 #include "voice.h"
 
+#include "sys.h"
+#include "core.h"
+#include "rom.h"
+
 sbit KEY_POWER   =  P1^5; //开关机键
 sbit POWER_EN    =  P1^3; //开机使能引脚
 
