@@ -7,9 +7,6 @@
 #include "core.h"
 #include "rom.h"
 
-sbit KEY_POWER   =  P1^5; //开关机键
-sbit POWER_EN    =  P1^3; //开机使能引脚
-
 #define KEY_U   0x80 //上
 #define KEY_L   0x40 //左
 #define KEY_D   0x20 //下
@@ -125,6 +122,13 @@ void Voice_Init(void);
 void main()
 {
 	unsigned char n = 0 , i = 0 ,d = 0 ;
+	unsigned int hold_time = 50;
+	unsigned int sleep_ticks = 1000, sleep_delay = 1000;
+	unsigned int timer_inc = 32;
+
+	sysctx_t ctx;
+	cpu_state_t cpu;
+	
 	P_SW2 |= 0x80;
 	Pin_Init();
 	Display_Init();
@@ -134,15 +138,33 @@ void main()
 	{
 		delay_ms(2);
 	}
-	Tetris_Init(); //随机生成第一个方块
+	//Tetris_Init(); //随机生成第一个方块
 	
-	//Screen_Buff[5][3] = 0x8;
+	timer_inc = timer_inc ? 0x10000 / timer_inc : 0x10000;
+	if (timer_inc > 0x10000) timer_inc = 0x10000;
+	
+	memset(&cpu, 0, sizeof(cpu));
 
-	while (1)
-	{
-		if(KEY_POWER == 1){while(KEY_POWER == 1);POWER_EN = 0; }; //关机
-		key_scan();
-		Tetris_Loop(key_down_bit);
+	memset(&ctx, 0, sizeof(ctx));
+	
+	sys_init(&ctx);
+
+	ctx.hold_time = hold_time;
+	ctx.sleep_ticks = sleep_ticks;
+	ctx.sleep_delay = sleep_delay;
+	ctx.timer_inc = timer_inc;
+	
+	//test_keys();
+
+	run_game(E23PlusMarkII96in1_bin, &ctx, &cpu);
+
+	//sys_close(&ctx);
+
+	//Screen_Buff[5][3] = 0x8;
+	
+		//key_scan();
+		//Tetris_Loop(key_down_bit);
+
 //		
 //		Screen_Buff[0][0] = 1 << n;
 //		Screen_Buff[1][0] = 1 << i;
@@ -166,5 +188,5 @@ void main()
 //		}
 //		
 //		Screen_Buff[n][3] = 1 << i;
-	}
+	
 }

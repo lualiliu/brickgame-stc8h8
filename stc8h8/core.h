@@ -9,13 +9,15 @@ static void run_game(uint8_t *rom, sysctx_t *sys, cpu_state_t *s) {
 	uint8_t pa = 0, pm = 0xf, ps = 0xf, pp = 0xf;
 	uint32_t tickcount = 0, prev_tick = 0, tmr_frac = 0;
 	uint64_t last_time;
-
+	uint32_t keys = 0;
+	
 #define CPU_TRACE 0
 
 	last_time = get_time_usec();
 
 	for (;;) {
 		unsigned x, op;
+
 		op = rom[pc];
 #define R1R0 s->r[1] << 4 | s->r[0]
 #define R3R2 s->r[3] << 4 | s->r[2]
@@ -222,9 +224,9 @@ static void run_game(uint8_t *rom, sysctx_t *sys, cpu_state_t *s) {
 			break;
 		}
 #endif
-
+/*
 		// 1ms
-		if (tickcount - prev_tick >= sys->sleep_ticks) {	//need to rewrite
+		if (tickcount - prev_tick >= sys->sleep_ticks) {
 			uint64_t new_time, delay;
 			uint32_t keys, sleep_delay;
 			prev_tick = tickcount;
@@ -237,12 +239,20 @@ static void run_game(uint8_t *rom, sysctx_t *sys, cpu_state_t *s) {
 			} else {
 				last_time += sleep_delay;
 				//usleep(sleep_delay - delay);
+				//delay_ms(sleep_delay - delay);
 			}
 			keys = ~sys_events(sys);
 			if (!(keys & 0x10000)) break;
 			pp = keys & 15;
 			ps = keys >> 4 & 15;
 		}
+*/
+		
+		sys_redraw(sys, s->mem);
+		keys = ~sys_events(sys);
+		if (!(keys & 0x10000)) break;
+		pp = keys & 15;
+		ps = keys >> 4 & 15;
 
 		if (s->timer_en) {
 			tmr_frac += sys->timer_inc;

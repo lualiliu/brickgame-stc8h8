@@ -33,10 +33,10 @@ static void Timer_0_Init(void)		//2毫秒@30.000MHz
 void Timer0_Isr() interrupt 1
 {
 	random_number ++;//定时器产生伪随机数
-	system_microseconds += 1000;  // 1毫秒
+	system_microseconds += 1;  // 1毫秒
 
-  if (system_microseconds >= 1000000) {
-		system_microseconds -= 1000000;
+  if (system_microseconds >= 1000) {
+		system_microseconds -= 1000;
 		system_seconds++;  // 如果微秒达到1000000，秒数增加1
 	}
 		

@@ -387,11 +387,6 @@
               <FilePath>.\display.c</FilePath>
             </File>
             <File>
-              <FileName>tetris.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\tetris.c</FilePath>
-            </File>
-            <File>
               <FileName>voice.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\voice.c</FilePath>
