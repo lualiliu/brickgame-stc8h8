@@ -22,6 +22,8 @@ int muteflags = 0;
 
 int firstscore = 0;
 int secondscore = 0;
+int thirdscore = 0;
+int fourthscore = 0;
 
 int level = 0;
 int speed = 0;
@@ -174,20 +176,92 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 			}
 		}
 	}
-	
+	// update next
+	{
+		int a = mem[184] | mem[186] << 4 | mem[188] << 8 | mem[190] << 12;
+		int diff = a ^ sys->old_next;
+		if (diff) {
+			sys->old_next = a;
+			//printf("0x%x\n",a);
+			score_undraw(8,0);score_undraw(8,1);score_undraw(8,2);score_undraw(8,3);
+			score_undraw(9,0);score_undraw(9,1);score_undraw(9,2);score_undraw(9,3);
+			if(a == 0xf0 || a == 0x1111){
+				score_draw(8,0);score_draw(8,1);score_draw(8,2);score_draw(8,3);
+			}else
+			if(a == 0x2640 || a == 0x5600){
+				score_draw(8,1);score_draw(9,1);score_draw(9,2);score_draw(9,3);
+			}else
+			if(a == 0x4620 || a == 0x6500){
+				score_draw(8,2);score_draw(9,2);score_draw(9,1);score_draw(9,0);
+			}else
+			if(a == 0x550){
+				score_draw(9,1);score_draw(8,1);score_draw(8,2);score_draw(9,2);
+			}else
+			if(a == 0x1700 || a == 0x7200 || a == 0x6440 || a == 0x2260){
+				score_draw(8,2);score_draw(8,1);score_draw(9,2);score_draw(9,3);
+			}else
+			if(a == 0x7100 || a == 0x2700 || a == 0x4460 || a == 0x6220){
+				score_draw(8,2);score_draw(8,1);score_draw(9,1);score_draw(9,0);
+			}else
+			if(a == 0x7400 || a == 0x2620 || a == 0x4640 || a == 0x4700){
+				score_draw(8,1);score_draw(9,1);score_draw(9,2);score_draw(9,0);
+			}
+		}
+	}
+	{
+		int a;
+		static const uint16_t digit1[] = {
+			0x8c8c, 0x0880, 0x84c8, 0x88c8, 0x08c4,
+			0x884c, 0x8c4c, 0x0888, 0x8ccc, 0x88cc };
+		// update speed
+		a = mem[196] | mem[198] << 4 | mem[200] << 8 | mem[202] << 12;
+		a &= 0x8ccc;
+		if (a != sys->old_speed) {
+			sys->old_speed = a;
+			for (j = 0; j < 10; j++) if (a == digit1[j]) break;
+			speed = j < 10 ? j : j % 10;
+		}
+		// update level
+		a = mem[204] | mem[206] << 4 | mem[208] << 8 | mem[210] << 12;
+		a &= 0x8ccc;
+		
+		
+		if (a != sys->old_level) {
+			sys->old_level = a;
+			for (j = 0; j < 10; j++) if (a == digit1[j]) break;
+			level = j < 10 ? j : j % 10;
+		}
+	}
+	// update score
+	{
+		char buf[4]; uint32_t a;
+		static const uint8_t digit4[] = {
+			0xe7, 0xa0, 0xcb, 0xe9, 0xac, 0x6d, 0x6f, 0xe0, 0xef, 0xed };
+		a  = (mem[179] | mem[199] << 4) << 24;
+		a |= (mem[185] | mem[201] << 4) << 16;
+		a |= (mem[189] | mem[187] << 4) << 8;
+		a |=  mem[191] | mem[203] << 4;
+		a &= 0xefefefef;
+		if (a != sys->old_score) {
+			sys->old_score = a;
+			for (i = 0; i < 4; i++, a >>= 8) {
+				int x = a & 0xff;
+				for (j = 0; j < 10; j++) if (x == digit4[j]) break;
+				buf[i] = j < 10 ? j + '0' : x ? '?' : ' ';
+			}
+		}
+		fourthscore = buf[0]-'0';
+		thirdscore = buf[1]-'0';
+		secondscore = buf[2]-'0';
+		firstscore = buf[3]-'0';
+	}
 	Screen_Buff[1][3] |= (1 << 4);
 	Screen_Buff[6][3] |= (1 << 3);
 	Screen_Buff[4][3] |= (1 << 3);
 	Screen_Buff[0][3] |= (1 << 5);
 	//Screen_Buff[1][3] |= (1 << 2);
 	//put_char(mem[177]>>2 & 1);
-	secondscore = ((mem[177]>>3) & 1);
-	firstscore = ((mem[177]>>2) & 1);
-	
-	level = ((mem[210]>>2) & 1);
-	speed = ((mem[202]>>2) & 1);
-	
-	
+
 	
 	if(speed==1){
 								score_undraw(8,5);
@@ -426,7 +500,7 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_undraw(1,2);			score_draw(0,2);
 								score_draw(1,3);
 	}else
-	if(firstscore==0){
+	{
 								score_draw(1,0);
 		score_draw(1,1);			score_draw(0,0);
 								score_undraw(0,1);
@@ -498,7 +572,7 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_undraw(3,2);			score_draw(2,2);
 								score_draw(3,3);
 	}else
-	if(secondscore==0){
+	{
 								score_draw(3,0);
 		score_draw(3,1);			score_draw(2,0);
 								score_undraw(2,1);
@@ -506,6 +580,151 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 								score_draw(3,3);
 	}
 	
+	
+	if(thirdscore==1){
+								score_undraw(5,0);
+		score_undraw(5,1);			score_draw(4,0);
+								score_undraw(4,1);
+		score_undraw(5,2);			score_draw(4,2);
+								score_undraw(5,3);
+		
+	}else 
+	if(thirdscore==2){
+								score_draw(5,0);
+		score_undraw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_draw(5,2);			score_undraw(4,2);
+								score_draw(5,3);
+	}else
+	if(thirdscore==3){
+								score_draw(5,0);
+		score_undraw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_undraw(5,2);			score_draw(4,2);
+								score_draw(5,3);
+	}else
+	if(thirdscore==4){
+								score_undraw(5,0);
+		score_draw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_undraw(5,2);			score_draw(4,2);
+								score_draw(5,3);
+	}else
+	if(thirdscore==5){
+								score_draw(5,0);
+		score_undraw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_draw(5,2);			score_undraw(4,2);
+								score_draw(5,3);
+	}else
+	if(thirdscore==6){
+								score_draw(5,0);
+		score_draw(5,1);			score_undraw(4,0);
+								score_draw(4,1);
+		score_draw(5,2);			score_draw(4,2);
+								score_draw(5,3);
+	}else
+	if(thirdscore==7){
+								score_draw(5,0);
+		score_undraw(5,1);			score_draw(4,0);
+								score_undraw(4,1);
+		score_undraw(5,2);			score_draw(4,2);
+								score_undraw(5,3);	
+	}else
+	if(thirdscore==8){
+								score_draw(5,0);
+		score_draw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_draw(5,2);			score_draw(4,2);
+								score_draw(5,3);	
+	}else
+	if(thirdscore==9){
+								score_draw(5,0);
+		score_draw(5,1);			score_draw(4,0);
+								score_draw(4,1);
+		score_undraw(5,2);			score_draw(4,2);
+								score_draw(5,3);
+	}else
+	{
+								score_draw(5,0);
+		score_draw(5,1);			score_draw(4,0);
+								score_undraw(4,1);
+		score_draw(5,2);			score_draw(4,2);
+								score_draw(5,3);
+	}
+
+	
+	if(fourthscore==1){
+								score_undraw(7,0);
+		score_undraw(7,1);			score_draw(6,0);
+								score_undraw(6,1);
+		score_undraw(7,2);			score_draw(6,2);
+								score_undraw(7,3);
+		
+	}else 
+	if(fourthscore==2){
+								score_draw(7,0);
+		score_undraw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_draw(7,2);			score_undraw(6,2);
+								score_draw(7,3);
+	}else
+	if(fourthscore==3){
+								score_draw(7,0);
+		score_undraw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_undraw(7,2);			score_draw(6,2);
+								score_draw(7,3);
+	}else
+	if(fourthscore==4){
+								score_undraw(7,0);
+		score_draw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_undraw(7,2);			score_draw(6,2);
+								score_draw(7,3);
+	}else
+	if(fourthscore==5){
+								score_draw(7,0);
+		score_undraw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_draw(7,2);			score_undraw(6,2);
+								score_draw(7,3);
+	}else
+	if(fourthscore==6){
+								score_draw(7,0);
+		score_draw(7,1);			score_undraw(6,0);
+								score_draw(6,1);
+		score_draw(7,2);			score_draw(6,2);
+								score_draw(7,3);
+	}else
+	if(fourthscore==7){
+								score_draw(7,0);
+		score_undraw(7,1);			score_draw(6,0);
+								score_undraw(6,1);
+		score_undraw(7,2);			score_draw(6,2);
+								score_undraw(7,3);	
+	}else
+	if(fourthscore==8){
+								score_draw(7,0);
+		score_draw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_draw(7,2);			score_draw(6,2);
+								score_draw(7,3);	
+	}else
+	if(fourthscore==9){
+								score_draw(7,0);
+		score_draw(7,1);			score_draw(6,0);
+								score_draw(6,1);
+		score_undraw(7,2);			score_draw(6,2);
+								score_draw(7,3);
+	}else
+	{
+								score_draw(7,0);
+		score_draw(7,1);			score_draw(6,0);
+								score_undraw(6,1);
+		score_draw(7,2);			score_draw(6,2);
+								score_draw(7,3);
+	}
 	if(mem[183]==0x0A){
 		Screen_Buff[1][3] |= (1 << 5);
 	}else{
