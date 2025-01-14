@@ -40,6 +40,10 @@ typedef struct {
 	unsigned hold_time, sleep_ticks, sleep_delay, timer_inc;
 	uint32_t misc;
 	uint32_t keys;
+	uint32_t old_speed;
+	uint32_t old_next;
+	uint32_t old_level;
+	uint32_t old_score;
 	//uint64_t key_timers[8];
 	uint16_t old_rows[20];
 } sysctx_t;
@@ -234,26 +238,29 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 	}
 	// update score
 	{
-		char buf[4]; uint32_t a;
+		/*
+		int buf[4]; uint32_t a;
 		static const uint8_t digit4[] = {
 			0xe7, 0xa0, 0xcb, 0xe9, 0xac, 0x6d, 0x6f, 0xe0, 0xef, 0xed };
 		a  = (mem[179] | mem[199] << 4) << 24;
 		a |= (mem[185] | mem[201] << 4) << 16;
 		a |= (mem[189] | mem[187] << 4) << 8;
 		a |=  mem[191] | mem[203] << 4;
+		put_char(a);
 		a &= 0xefefefef;
 		if (a != sys->old_score) {
 			sys->old_score = a;
 			for (i = 0; i < 4; i++, a >>= 8) {
 				int x = a & 0xff;
 				for (j = 0; j < 10; j++) if (x == digit4[j]) break;
-				buf[i] = j < 10 ? j + '0' : x ? '?' : ' ';
+				buf[i] = j < 10 ? j : j % 10;
 			}
 		}
-		fourthscore = buf[0]-'0';
-		thirdscore = buf[1]-'0';
-		secondscore = buf[2]-'0';
-		firstscore = buf[3]-'0';
+		*/
+		fourthscore = mem[0x4F];
+		thirdscore = mem[0x4E];
+		secondscore = mem[0x4D];
+		firstscore = mem[0x4C];
 	}
 	Screen_Buff[1][3] |= (1 << 4);
 	Screen_Buff[6][3] |= (1 << 3);
@@ -290,13 +297,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(7,5);			score_draw(6,5);
 								score_draw(5,5);
 		score_undraw(4,5);			score_draw(3,5);
-								score_draw(2,5);
+								score_undraw(2,5);
 	}else
 	if(speed==5){
 								score_draw(8,5);
-		score_undraw(7,5);			score_draw(6,5);
+		score_draw(7,5);			score_undraw(6,5);
 								score_draw(5,5);
-		score_draw(4,5);			score_undraw(3,5);
+		score_undraw(4,5);			score_draw(3,5);
 								score_draw(2,5);
 	}else
 	if(speed==6){
@@ -362,13 +369,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(7,4);			score_draw(6,4);
 								score_draw(5,4);
 		score_undraw(4,4);			score_draw(3,4);
-								score_draw(2,4);
+								score_undraw(2,4);
 	}else
 	if(level==5){
 								score_draw(8,4);
-		score_undraw(7,4);			score_draw(6,4);
+		score_draw(7,4);			score_undraw(6,4);
 								score_draw(5,4);
-		score_draw(4,4);			score_undraw(3,4);
+		score_undraw(4,4);			score_draw(3,4);
 								score_draw(2,4);
 	}else
 	if(level==6){
@@ -463,13 +470,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(1,1);			score_draw(0,0);
 								score_draw(0,1);
 		score_undraw(1,2);			score_draw(0,2);
-								score_draw(1,3);
+								score_undraw(1,3);
 	}else
 	if(firstscore==5){
 								score_draw(1,0);
-		score_undraw(1,1);			score_draw(0,0);
+		score_draw(1,1);			score_undraw(0,0);
 								score_draw(0,1);
-		score_draw(1,2);			score_undraw(0,2);
+		score_undraw(1,2);			score_draw(0,2);
 								score_draw(1,3);
 	}else
 	if(firstscore==6){
@@ -535,13 +542,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(3,1);			score_draw(2,0);
 								score_draw(2,1);
 		score_undraw(3,2);			score_draw(2,2);
-								score_draw(3,3);
+								score_undraw(3,3);
 	}else
 	if(secondscore==5){
 								score_draw(3,0);
-		score_undraw(3,1);			score_draw(2,0);
+		score_draw(3,1);			score_undraw(2,0);
 								score_draw(2,1);
-		score_draw(3,2);			score_undraw(2,2);
+		score_undraw(3,2);			score_draw(2,2);
 								score_draw(3,3);
 	}else
 	if(secondscore==6){
@@ -608,13 +615,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(5,1);			score_draw(4,0);
 								score_draw(4,1);
 		score_undraw(5,2);			score_draw(4,2);
-								score_draw(5,3);
+								score_undraw(5,3);
 	}else
 	if(thirdscore==5){
 								score_draw(5,0);
-		score_undraw(5,1);			score_draw(4,0);
+		score_draw(5,1);			score_undraw(4,0);
 								score_draw(4,1);
-		score_draw(5,2);			score_undraw(4,2);
+		score_undraw(5,2);			score_draw(4,2);
 								score_draw(5,3);
 	}else
 	if(thirdscore==6){
@@ -681,13 +688,13 @@ static void sys_redraw(sysctx_t *sys, uint8_t *mem) {	//need to rewrite
 		score_draw(7,1);			score_draw(6,0);
 								score_draw(6,1);
 		score_undraw(7,2);			score_draw(6,2);
-								score_draw(7,3);
+								score_undraw(7,3);
 	}else
 	if(fourthscore==5){
 								score_draw(7,0);
-		score_undraw(7,1);			score_draw(6,0);
+		score_draw(7,1);			score_undraw(6,0);
 								score_draw(6,1);
-		score_draw(7,2);			score_undraw(6,2);
+		score_undraw(7,2);			score_draw(6,2);
 								score_draw(7,3);
 	}else
 	if(fourthscore==6){
